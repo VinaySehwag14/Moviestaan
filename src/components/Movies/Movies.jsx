@@ -19,10 +19,10 @@ function Movies() {
     genreIdOrCategoryName,
     page,
     searchQuery,
-  });
+  }); //fetching data from an API
 
-  const lg = useMediaQuery((theme) => theme.breakpoints.only('lg'));
-  const numberOfMovies = lg ? 17 : 19;
+  const lgDevice = useMediaQuery((theme) => theme.breakpoints.only('lg'));
+  const numberOfMoviesToShow = lgDevice ? 17 : 19; //notice: data?.results?.length === 20
 
   if (isFetching) {
     return (
@@ -31,31 +31,40 @@ function Movies() {
       </Box>
     );
   }
-
-  if (!data.results.length) {
+  if (error) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" mt="20px">
-        <Typography variant="h4">
-          No movies that match that name.
-          <br />
-          Please searh for something else.
-        </Typography>
+      <Box display="flex" alignItems="center" mt="20px">
+        <Typography variant="h4">An error has occured.</Typography>
       </Box>
     );
   }
 
-  if (error) return 'An error has occured.';
-
+  if (!data?.results?.length) {
+    //if a person searches for a movie...
+    return (
+      <Box display="flex" alignItems="center" mt="20px">
+        <Typography variant="h4">
+          No movies that match that name.
+          <br />
+          Please search for something else.
+        </Typography>
+      </Box>
+    );
+  }
   return (
-    <div>
-      <FeaturedMovie movie={data.results[0]} />
-      <MovieList movies={data} numberOfMovies={numberOfMovies} excludeFirst />
+    <>
+      <FeaturedMovie movie={data?.results[0]} />
+      <MovieList
+        movies={data}
+        numberOfMovies={numberOfMoviesToShow}
+        excludeFirst
+      />
       <Pagination
         currentPage={page}
         setPage={setPage}
-        totalPages={data.total_pages}
+        totalPages={data?.total_pages}
       />
-    </div>
+    </>
   );
 }
 

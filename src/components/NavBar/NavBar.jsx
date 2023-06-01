@@ -20,7 +20,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import useStyles from './styles';
 import { Search, Sidebar } from '../index';
-import { setUser } from '../../features/auth';
+import { setUser, userSelector } from '../../features/auth';
 import { fetchToken, createSessionId, moviesApi } from '../../utils/index';
 import { ColorModeContext } from '../../utils/ToggleColorMode';
 
@@ -29,10 +29,7 @@ function Navbar() {
   const isMobile = useMediaQuery('(max-width:600px)');
   const theme = useTheme();
   const dispatch = useDispatch();
-  const { isAuthenticated, user } = useSelector((state) => state.user);
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  const colorMode = useContext(ColorModeContext);
 
   const token = localStorage.getItem('request_token');
   const sessionIdFromLocalStorage = localStorage.getItem('session_id');
@@ -59,6 +56,10 @@ function Navbar() {
 
     logInUser();
   }, [token]);
+
+  const { isAuthenticated, user } = useSelector(userSelector); //notice: <=> useSelector((state) => state.currentUser)
+
+  const colorMode = useContext(ColorModeContext);
 
   return (
     <>

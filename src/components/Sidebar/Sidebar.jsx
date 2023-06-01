@@ -17,9 +17,8 @@ import useStyles from './styles';
 import { selectGenreOrCategory } from '../../features/currentGenreOrCategory';
 import genreIcons from '../../assets/genres';
 import { useGetGenresQuery } from '../../services/TMBD';
+import darkLogo from '../../assets/images/darkLogo.png';
 
-const redLogo =
-  'https://api.logo.com/api/v2/images?logo=logo_b41d18ad-62df-455c-8b15-e3ffde2e3548&format=webp&margins=0&quality=60&width=500&background=transparent&u=1685273541';
 const blueLogo =
   'https://api.logo.com/api/v2/images?logo=logo_b41d18ad-62df-455c-8b15-e3ffde2e3548&format=webp&margins=0&quality=60&width=500&background=transparent&u=1685274795';
 
@@ -47,7 +46,7 @@ function Sidebar({ setMobileOpen }) {
       <Link to="/" className={classes.imageLink}>
         <img
           className={classes.image}
-          src={theme.palette.mode === 'light' ? blueLogo : redLogo}
+          src={theme.palette.mode === 'light' ? blueLogo : darkLogo}
           alt="moviestaan Logo"
         />
       </Link>

@@ -19,7 +19,7 @@ import {
   Remove,
   ArrowBack,
 } from '@mui/icons-material';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 
@@ -29,108 +29,149 @@ import { MovieList } from '../index';
 import { selectGenreOrCategory } from '../../features/currentGenreOrCategory';
 import genreIcons from '../../assets/genres';
 import {
-  useGetListQuery,
   useGetMovieQuery,
   useGetRecommendationsQuery,
+  useGetUsersListQuery,
 } from '../../services/TMBD';
 
+import { userSelector } from '../../features/auth';
+
 function MovieInfo() {
+  const history = useNavigate();
   const classes = useStyles();
+  const noImage =
+    'https://t4.ftcdn.net/jpg/02/51/95/53/360_F_251955356_FAQH0U1y1TZw3ZcdPGybwUkH90a3VAhb.jpg';
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.user);
+
+  /*fetching the movie information*/
   const { id } = useParams();
-
+  console.log(id, 'id in mvoi ingo');
   const { data, error, isFetching } = useGetMovieQuery(id);
-  const { data: favoriteMovies } = useGetListQuery({
-    listName: 'favorite/movies',
-    accountId: user.id,
-    sessionId: localStorage.getItem('session_id'),
-    page: 1,
-  });
-  const { data: watchlistMovies } = useGetListQuery({
-    listName: 'watchlist/movies',
-    accountId: user.id,
-    sessionId: localStorage.getItem('session_id'),
-    page: 1,
-  });
-  const { data: recommendations } = useGetRecommendationsQuery({
-    list: '/recommendations',
-    movie_id: id,
-  });
 
-  const [open, setOpen] = useState(false);
+  /*adding/removing the movie from the favorites/watchlist*/
+  const user = useSelector(userSelector);
   const [isMovieFavorited, setIsMovieFavorited] = useState(false);
   const [isMovieWatchlisted, setIsMovieWatchlisted] = useState(false);
+
+  const addToFavorites = async () => {
+    const baseUrl = 'https://api.themoviedb.org/3';
+    await axios.post(
+      `${baseUrl}/account/${user.id}/favorite?api_key=${
+        process.env.REACT_APP_TMDB_KEY
+      }&session_id=${localStorage.getItem('session_id')}`,
+      {
+        media_type: 'movie',
+        media_id: id, //which movie to favorite
+        favorite: !isMovieFavorited,
+      }
+    );
+
+    setIsMovieFavorited((prevState) => !prevState);
+  };
+
+  const addToWatchlist = async () => {
+    const baseUrl = 'https://api.themoviedb.org/3';
+    await axios.post(
+      `${baseUrl}/account/${user.id}/watchlist?api_key=${
+        process.env.REACT_APP_TMDB_KEY
+      }&session_id=${localStorage.getItem('session_id')}`,
+      {
+        media_type: 'movie',
+        media_id: id, //which movie to favorite
+        watchlist: !isMovieWatchlisted,
+      }
+    );
+
+    setIsMovieWatchlisted((prevState) => !prevState);
+  };
+
+  /*seting the initial value of isMovieFavorited/isMovieWatchlisted*/
+  const { data: favoriteMovies, refetch: refetchFavorited } =
+    useGetUsersListQuery({
+      accountId: user.id,
+      sessionId: localStorage.getItem('session_id'),
+      page: 1,
+      list: 'favorite/movies',
+    });
+  const { data: watchlistMovies, refetch: refetchWatchlisted } =
+    useGetUsersListQuery({
+      accountId: user.id,
+      sessionId: localStorage.getItem('session_id'),
+      page: 1,
+      list: 'watchlist/movies',
+    });
+
+  useEffect(() => {
+    refetchFavorited();
+    refetchWatchlisted();
+  }, []);
 
   useEffect(() => {
     setIsMovieFavorited(
       !!favoriteMovies?.results?.find((movie) => movie?.id === data?.id)
     );
   }, [favoriteMovies, data]);
+
   useEffect(() => {
     setIsMovieWatchlisted(
       !!watchlistMovies?.results?.find((movie) => movie?.id === data?.id)
     );
   }, [watchlistMovies, data]);
 
-  const addToFavorites = async () => {
-    await axios.post(
-      `https://api.themoviedb.org/3/account/${user.id}/favorite?api_key=${
-        process.env.REACT_APP_TMDB_KEY
-      }&session_id=${localStorage.getItem('session_id')}`,
-      {
-        media_type: 'movie',
-        media_id: id,
-        favorite: !isMovieFavorited,
-      }
-    );
+  /*fetching the recommendations*/
+  const { data: recommendations, isFetching: isRecommendationsFetching } =
+    useGetRecommendationsQuery({ movieId: id, list: '/recommendations' });
 
-    setIsMovieFavorited((prev) => !prev);
-  };
-
-  const addToWatchList = async () => {
-    await axios.post(
-      `https://api.themoviedb.org/3/account/${user.id}/watchlist?api_key=${
-        process.env.REACT_APP_TMDB_KEY
-      }&session_id=${localStorage.getItem('session_id')}`,
-      {
-        media_type: 'movie',
-        media_id: id,
-        watchlist: !isMovieWatchlisted,
-      }
-    );
-
-    setIsMovieWatchlisted((prev) => !prev);
-  };
+  /*modal state*/
+  const [open, setOpen] = useState(false);
 
   if (isFetching) {
     return (
-      <Box display="flex" alignItems="center" justifyContent="center">
+      <Box display="flex" justifyContent="center">
         <CircularProgress size="8rem" />
       </Box>
     );
   }
-
   if (error) {
     return (
-      <Box display="flex" alignItems="center" justifyContent="center">
-        <Link to="/">Something went wrong - Go back.</Link>
+      <Box display="flex" justifyContent="center" alignItems="center">
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={() => history(-1)}
+          color="primary"
+        >
+          Something has gone wrong - Go back
+        </Button>
       </Box>
     );
   }
-
   return (
     <Grid container className={classes.containerSpaceAround}>
-      <Grid item sm={12} lg={4} align="center">
+      <Grid
+        item
+        sm={12}
+        lg={4}
+        style={{
+          display: 'flex',
+          marginBottom: '30px',
+          justifyContent: 'center',
+        }}
+      >
         <img
-          src={`https://image.tmdb.org/t/p/w500/${data?.poster_path}`}
           className={classes.poster}
+          src={
+            data?.poster_path
+              ? `https://image.tmdb.org/t/p/w500/${data?.poster_path}`
+              : noImage
+          }
           alt={data?.title}
         />
       </Grid>
+
       <Grid item container direction="column" lg={7}>
+        {/*title, tagline, rating, runtime, spoken languages*/}
         <Typography variant="h3" align="center" gutterBottom>
-          {data?.title} ({data.release_date.split('-')[0]})
+          {data?.title} ({data?.release_date.split('-')[0]})
         </Typography>
         <Typography variant="h5" align="center" gutterBottom>
           {data?.tagline}
@@ -139,27 +180,32 @@ function MovieInfo() {
           <Box display="flex" align="center">
             <Rating readOnly value={data.vote_average / 2} />
             <Typography
-              gutterBottom
               variant="subtitle1"
+              gutterBottom
               style={{ marginLeft: '10px' }}
             >
               {data?.vote_average} / 10
             </Typography>
           </Box>
-          <Typography gutterBottom variant="h6" align="center">
-            {data?.runtime}min
+          <Typography variant="h6" align="center" gutterBottom>
+            {data?.runtime}min |{' '}
+            {data?.spoken_languages?.length > 0
+              ? data?.spoken_languages[0].name
+              : ''}
           </Typography>
         </Grid>
+
+        {/*genres and overview*/}
         <Grid item className={classes.genresContainer}>
           {data?.genres?.map((genre) => (
             <Link
+              key={genre?.name}
               className={classes.links}
-              key={genre.name}
               to="/"
               onClick={() => dispatch(selectGenreOrCategory(genre.id))}
             >
               <img
-                src={genreIcons[genre.name.toLowerCase()]}
+                src={genreIcons[genre?.name.toLowerCase()]}
                 className={classes.genreImage}
                 height={30}
               />
@@ -169,50 +215,55 @@ function MovieInfo() {
             </Link>
           ))}
         </Grid>
-        <Typography variant="h5" gutterBottom style={{ marginTop: '20px' }}>
+        <Typography variant="h5" gutterBottom style={{ marginTop: '10px' }}>
           Overview
         </Typography>
         <Typography style={{ marginBottom: '2rem' }}>
           {data?.overview}
         </Typography>
-        <Typography variant="h5" gutterBottom>
+
+        {/*top cast*/}
+        <Typography variant="h5" gutterBottom style={{ marginBottom: '15px' }}>
           Top Cast
         </Typography>
         <Grid item container spacing={2}>
-          {data &&
-            data?.credits?.cast
-              ?.map(
-                (character, i) =>
-                  character.profile_path && (
-                    <Grid
-                      key={i}
-                      item
-                      xs={4}
-                      md={2}
-                      component={Link}
-                      to={`/actors/${character.id}`}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <img
-                        className={classes.castImage}
-                        src={`https://image.tmdb.org/t/p/w500/${character.profile_path}`}
-                        alt={character.name}
-                      />
-                      <Typography color="textPrimary" align="center">
-                        {character?.name}
-                      </Typography>
-                      <Typography color="textSecondary" align="center">
-                        {character.character.split('/')[0]}
-                      </Typography>
-                    </Grid>
-                  )
-              )
-              .slice(0, 6)}
+          {data?.credits?.cast?.slice(0, 6)?.map((character, i) => (
+            <Grid
+              key={i}
+              item
+              xs={4}
+              md={2}
+              component={Link}
+              to={`/actors/${character?.id}`}
+              style={{ textDecoration: 'none' }}
+            >
+              <img
+                className={classes.castImage}
+                src={
+                  character?.profile_path
+                    ? `https://image.tmdb.org/t/p/w500/${character?.profile_path}`
+                    : noImage
+                }
+                alt={character?.name}
+              />
+              <Typography color="textPrimary">{character?.name}</Typography>
+              <Typography color="textSecondary">
+                {character?.character.split('/')[0]}
+              </Typography>
+            </Grid>
+          ))}
         </Grid>
-        <Grid item container style={{ marginTop: '2rem' }}>
-          <div className={classes.buttonContainer}>
-            <Grid item xs={12} sm={6} className={classes.buttonContainer}>
-              <ButtonGroup size="small" variant="outlined">
+
+        <Grid
+          item
+          container
+          style={{ marginTop: '2rem' }}
+          justifyContent="center"
+        >
+          <div className={classes.buttonsContainer}>
+            {/*website, IMDB, trailer*/}
+            <Grid item xs={12} sm={6} className={classes.buttonsContainer}>
+              <ButtonGroup size="medium" variant="outlined">
                 <Button
                   target="_blank"
                   rel="noopener noreferrer"
@@ -229,17 +280,15 @@ function MovieInfo() {
                 >
                   IMDB
                 </Button>
-                <Button
-                  onClick={() => setOpen(true)}
-                  href="#"
-                  endIcon={<Theaters />}
-                >
+                <Button onClick={() => setOpen(true)} endIcon={<Theaters />}>
                   Trailer
                 </Button>
               </ButtonGroup>
             </Grid>
-            <Grid item xs={12} sm={6} className={classes.buttonContainer}>
-              <ButtonGroup size="small" variant="outlined">
+
+            {/*favorite, watchlist, back*/}
+            <Grid item xs={12} sm={6} className={classes.buttonsContainer}>
+              <ButtonGroup size="medium" variant="outlined">
                 <Button
                   onClick={addToFavorites}
                   endIcon={
@@ -249,7 +298,7 @@ function MovieInfo() {
                   {isMovieFavorited ? 'Unfavorite' : 'Favorite'}
                 </Button>
                 <Button
-                  onClick={addToWatchList}
+                  onClick={addToWatchlist}
                   endIcon={isMovieWatchlisted ? <Remove /> : <PlusOne />}
                 >
                   Watchlist
@@ -257,13 +306,12 @@ function MovieInfo() {
                 <Button
                   endIcon={<ArrowBack />}
                   sx={{ borderColor: 'primary.main' }}
+                  onClick={() => history(-1)}
                 >
                   <Typography
-                    variant="subtitle2"
-                    component={Link}
-                    to="/"
+                    style={{ textDecoration: 'none' }}
                     color="inherit"
-                    sx={{ textDecoration: 'none' }}
+                    variant="subtitle2"
                   >
                     Back
                   </Typography>
@@ -273,34 +321,48 @@ function MovieInfo() {
           </div>
         </Grid>
       </Grid>
+
+      {/*recommended movies*/}
       <Box marginTop="5rem" width="100%">
-        <Typography variant="h3" gutterBottom align="center">
+        <Typography variant="h3" align="center" gutterBottom>
           You might also like
         </Typography>
-        {recommendations ? (
-          <MovieList movies={recommendations} numberOfMovies={12} />
-        ) : (
-          <Box>Sorry, nothing was found.</Box>
+        {isRecommendationsFetching && (
+          <Box display="flex" justifyContent="center">
+            <CircularProgress size="4rem" />
+          </Box>
         )}
+        {!isRecommendationsFetching &&
+          (recommendations && recommendations?.results?.length ? (
+            <MovieList movies={recommendations} numberOfMovies={12} />
+          ) : (
+            <Box>
+              <Typography variant="h6" align="center">
+                Sorry, nothing was found.
+              </Typography>
+            </Box>
+          ))}
       </Box>
-      <Modal
-        closeAfterTransition
-        className={classes.modal}
-        open={open}
-        onClose={() => setOpen(false)}
-        tabIndex={-1}
-      >
-        {data?.videos?.results?.length > 0 && (
+
+      {/*movie trailer*/}
+      {data?.videos?.results?.length > 0 && (
+        <Modal
+          closeAfterTransition
+          className={classes.modal}
+          open={open}
+          onClose={() => setOpen(false)}
+        >
           <iframe
             autoPlay
             className={classes.video}
             frameBorder="0"
             title="Trailer"
-            src={`https://www.youtube.com/embed/${data.videos.results[0].key}`}
+            src={`https://www.youtube.com/embed/${data?.videos?.results[0].key}?autoplay=1`}
             allow="autoplay"
+            allowFullScreen
           />
-        )}
-      </Modal>
+        </Modal>
+      )}
     </Grid>
   );
 }

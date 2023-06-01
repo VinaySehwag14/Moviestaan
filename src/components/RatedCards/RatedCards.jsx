@@ -4,7 +4,7 @@ import { Typography, Box } from '@mui/material';
 import useStyles from './styles';
 import { Movie } from '../index';
 
-function RatedCards({ title, movies }) {
+function RatedCards({ title, data }) {
   const classes = useStyles();
 
   return (
@@ -13,7 +13,7 @@ function RatedCards({ title, movies }) {
         {title}
       </Typography>
       <Box display="flex" flexWrap="wrap" className={classes.container}>
-        {movies?.results.map((movie, i) => (
+        {data?.results?.map((movie, i) => (
           <Movie key={movie.id} movie={movie} i={i} />
         ))}
       </Box>

@@ -4,22 +4,23 @@ import { ExitToApp } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 
 import { RatedCards } from '../index';
-import { useGetListQuery } from '../../services/TMBD';
+import { useGetUsersListQuery } from '../../services/TMBD';
 
 function Profile() {
   const { user } = useSelector((state) => state.user);
-  const { data: favoriteMovies, refetch: refetchFavorites } = useGetListQuery({
-    listName: 'favorite/movies',
-    accountId: user.id,
-    sessionId: localStorage.getItem('session_id'),
-    page: 1,
-  });
-  const { data: watchlistMovies, refetch: refetchWatchlisted } =
-    useGetListQuery({
-      listName: 'watchlist/movies',
+  const { data: favoriteMovies, refetch: refetchFavorites } =
+    useGetUsersListQuery({
       accountId: user.id,
       sessionId: localStorage.getItem('session_id'),
       page: 1,
+      listName: 'favorite/movies',
+    });
+  const { data: watchlistMovies, refetch: refetchWatchlisted } =
+    useGetUsersListQuery({
+      accountId: user.id,
+      sessionId: localStorage.getItem('session_id'),
+      page: 1,
+      listName: 'watchlist/movies',
     });
 
   useEffect(() => {

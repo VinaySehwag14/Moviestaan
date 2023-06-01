@@ -11,14 +11,13 @@ export const fetchToken = async () => {
   try {
     const { data } = await moviesApi.get('/authentication/token/new');
 
-    const token = data.request_token;
-
     if (data.success) {
-      localStorage.setItem('request_token', token);
-      window.location.href = `https://www.themoviedb.org/authenticate/${token}?redirect_to=${window.location.origin}/approved`;
+      localStorage.setItem('request_token', data.request_token);
+
+      window.location.href = `https://www.themoviedb.org/authenticate/${data.request_token}?redirect_to=${window.location.origin}/approved`;
     }
   } catch (error) {
-    console.log('Sorry, your token could not be created.');
+    console.log('Your authentication token could not be created.');
   }
 };
 
@@ -29,15 +28,14 @@ export const createSessionId = async () => {
     try {
       const {
         data: { session_id },
-      } = await moviesApi.post('authentication/session/new', {
+      } = await moviesApi.post('/authentication/session/new', {
         request_token: token,
       });
-      console.log(session_id, 'this is my session id');
       localStorage.setItem('session_id', session_id);
 
       return session_id;
     } catch (error) {
-      console.log(error);
+      console.log('Your session id could not be created.');
     }
   }
 };

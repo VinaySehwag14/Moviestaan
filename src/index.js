@@ -17,7 +17,6 @@ root.render(
         </BrowserRouter>
       </ToggleColorMode>
     </Provider>
-    ,
   </React.StrictMode>
 );
 

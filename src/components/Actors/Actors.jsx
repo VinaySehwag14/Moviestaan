@@ -6,40 +6,41 @@ import { ArrowBack } from '@mui/icons-material';
 import useStyles from './styles';
 import { MovieList, Pagination } from '../index';
 import {
-  useGetActorQuery,
-  useGetMoviesByActorIdQuery,
+  useGetActorsDetailsQuery,
+  useGetMoviesByActorsIdQuery,
 } from '../../services/TMBD';
 
 function Actors() {
+  const history = useNavigate();
   const classes = useStyles();
-  const [page, setPage] = useState(1);
-  const navigate = useNavigate();
   const { id } = useParams();
-  const { data, isFetching, error } = useGetActorQuery(id);
-  const { data: movies } = useGetMoviesByActorIdQuery({ id, page });
+
+  const { data, error, isFetching } = useGetActorsDetailsQuery(id);
+
+  const [page, setPage] = useState(1);
+  const { data: movies, isFetching: isMoviesFetching } =
+    useGetMoviesByActorsIdQuery({ actorsId: id, page });
 
   if (isFetching) {
     return (
-      <Box display="flex" alignItems="center" justifyContent="center">
+      <Box display="flex" justifyContent="center">
         <CircularProgress size="8rem" />
       </Box>
     );
   }
-
   if (error) {
     return (
-      <Box display="flex" alignItems="center" justifyContent="center">
+      <Box display="flex" justifyContent="center" alignItems="center">
         <Button
           startIcon={<ArrowBack />}
-          onClick={() => navigate(-1)}
+          onClick={() => history(-1)}
           color="primary"
         >
-          Go Back
+          Go back
         </Button>
       </Box>
     );
   }
-
   return (
     <>
       <Grid container spacing={3}>
@@ -47,7 +48,7 @@ function Actors() {
           <img
             className={classes.image}
             src={`https://image.tmdb.org/t/p/w780/${data?.profile_path}`}
-            alt={data.name}
+            alt={data?.name}
           />
         </Grid>
         <Grid
@@ -69,7 +70,7 @@ function Actors() {
           <Typography variant="body1" align="justify" paragraph>
             {data?.biography || 'Sorry, no biography yet...'}
           </Typography>
-          <Box className={classes.btns}>
+          <Box marginTop="2rem" display="flex" justifyContent="space-around">
             <Button
               variant="contained"
               color="primary"
@@ -80,7 +81,7 @@ function Actors() {
             </Button>
             <Button
               startIcon={<ArrowBack />}
-              onClick={() => navigate(-1)}
+              onClick={() => history(-1)}
               color="primary"
             >
               Back
@@ -89,15 +90,31 @@ function Actors() {
         </Grid>
       </Grid>
       <Box margin="2rem 0">
-        <Typography variant="h2" gutterBottom align="center">
+        <Typography variant="h2" align="center" gutterBottom>
           Movies
         </Typography>
-        {movies && <MovieList movies={movies} numberOfMovies={12} />}
-        <Pagination
-          currentPage={page}
-          setPage={setPage}
-          totalPages={movies?.total_pages}
-        />
+        {isMoviesFetching && (
+          <Box display="flex" justifyContent="center">
+            <CircularProgress size="4rem" />
+          </Box>
+        )}
+        {!isMoviesFetching &&
+          (movies && movies?.results?.length ? (
+            <>
+              <MovieList movies={movies} numberOfMovies={12} />
+              <Pagination
+                currentPage={page}
+                setPage={setPage}
+                totalPages={movies?.total_pages}
+              />
+            </>
+          ) : (
+            <Box>
+              <Typography variant="h6" align="center">
+                Sorry, nothing was found.
+              </Typography>
+            </Box>
+          ))}
       </Box>
     </>
   );

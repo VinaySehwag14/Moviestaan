@@ -13,44 +13,42 @@ import {
 function useAlan() {
   const { setMode } = useContext(ColorModeContext);
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const history = useNavigate();
 
   useEffect(() => {
     alanBtn({
       key: process.env.REACT_APP_ALAN_SDK_KEY,
-      onCommand: ({ command, mode, genres, genreOrCategory, query }) => {
-        if (command === 'chooseGenre') {
-          console.log(genres, 'this is genres inalan');
-          if (genreOrCategory) {
-            console.log(genreOrCategory, 'this is genreOrCategoryn');
-
-            const foundGenre = genres.find(
-              (g) => g.name.toLowerCase() === genreOrCategory.toLowerCase()
-            );
-            if (foundGenre) {
-              navigate('/');
-              dispatch(selectGenreOrCategory(foundGenre.id));
-            } else {
-              const category = genreOrCategory.startsWith('top')
-                ? 'top_rated'
-                : genreOrCategory;
-              navigate('/');
-              dispatch(selectGenreOrCategory(category));
-            }
-          }
-        } else if (command === 'changeMode') {
-          if (mode === 'light') {
-            setMode('light');
-          } else {
-            setMode('dark');
-          }
+      onCommand: ({ command, mode, genreOrCategory, genres, query }) => {
+        if (command === 'changeMode') {
+          if (mode === 'light') setMode('light');
+          else setMode('dark');
         } else if (command === 'login') {
           fetchToken();
         } else if (command === 'logout') {
           localStorage.clear();
-          navigate('/');
+          window.location.href = '/';
+        } else if (command === 'chooseGenreOrCategory') {
+          const foundGenre = genres.find(
+            (g) => g.name.toLowerCase() === genreOrCategory.toLowerCase()
+          );
+
+          if (foundGenre) {
+            //only for genres
+            history('/');
+            dispatch(selectGenreOrCategory(foundGenre.id));
+          } else if (genreOrCategory) {
+            //categories: 'popular', 'top rated', 'upcoming'
+            const category = genreOrCategory.startsWith('top')
+              ? 'top_rated'
+              : genreOrCategory;
+
+            history('/');
+            dispatch(selectGenreOrCategory(category));
+          }
         } else if (command === 'search') {
           dispatch(searchMovie(query));
+        } else if (command === 'goback') {
+          history(-1);
         }
       },
     });

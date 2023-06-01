@@ -3,18 +3,18 @@ import { createSlice } from '@reduxjs/toolkit';
 export const genreOrCategory = createSlice({
   name: 'genreOrCategory',
   initialState: {
+    //object with the next three properties
     genreIdOrCategoryName: '',
     page: 1,
     searchQuery: '',
   },
   reducers: {
-    selectGenreOrCategory: (state, action) => {
-      console.log(action.payload, 'data in selectgente');
-      state.genreIdOrCategoryName = action.payload;
-      state.searchQuery = '';
+    selectGenreOrCategory: (oldState, action) => {
+      oldState.genreIdOrCategoryName = action.payload;
+      oldState.searchQuery = '';
     },
-    searchMovie: (state, action) => {
-      state.searchQuery = action.payload;
+    searchMovie: (oldState, action) => {
+      oldState.searchQuery = action.payload;
     },
   },
 });
